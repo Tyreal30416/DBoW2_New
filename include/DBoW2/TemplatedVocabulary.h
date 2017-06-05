@@ -1420,7 +1420,7 @@ void TemplatedVocabulary<TDescriptor,F>::save(cv::FileStorage &f,
     for(pit = children.begin(); pit != children.end(); pit++)
     {
       const Node& child = m_nodes[*pit];
-
+      
       // save node data
       f << "{:";
       f << "nodeId" << (int)child.id;
@@ -1428,7 +1428,7 @@ void TemplatedVocabulary<TDescriptor,F>::save(cv::FileStorage &f,
       f << "weight" << (double)child.weight;
       f << "descriptor" << F::toString(child.descriptor);
       f << "}";
-
+      
       // add to parent list
       if(!child.isLeaf())
       {

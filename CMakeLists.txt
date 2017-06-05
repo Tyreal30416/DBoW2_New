@@ -5,6 +5,8 @@ option(WITH_OPENMP   "Enable OpenMP multithreading"     ON)
 option(BUILD_DBoW2   "Build DBoW2"            ON)
 option(BUILD_Demo    "Build demo application" ON)
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/.cmake")
 include(UpdateCacheVariable)
 
@@ -28,10 +30,22 @@ if (WITH_OPENMP)
     endif(OPENMP_FOUND)
 endif(WITH_OPENMP)
 
-find_package(OpenCV REQUIRED)
-find_package(DLib REQUIRED)
+#find_package(OpenCV REQUIRED)
+#find_package(DLib REQUIRED)
 find_package(Boost REQUIRED)
+#set opencv2.4
+set(OpenCV_INCLUDE_DIRS /usr/local/include ${OpenCV_INCLUDE_DIRS})
+set(OpenCV_LIB_DIRS /usr/local/lib)
+set(OpenCV_LIBS opencv_core opencv_imgproc opencv_calib3d opencv_video opencv_features2d opencv_ml opencv_highgui opencv_objdetect opencv_contrib opencv_legacy opencv_nonfree)
 
+message(${OpenCV_LIBS})
+
+#set dlib
+set(DLIB_INCLUDE_DIRS /usr/local/include/ ${DLIB_INCLUDE_DIRS})
+set(DLIB_LIB_DIR /usr/local/lib/ )
+set(DLIB_LIBRARIES DLib)
+
+link_directories(${OpenCV_LIB_DIRS} ${DLIB_LIB_DIR})
 if(BUILD_DBoW2)
 	include_directories(include/DBoW2/ ${OpenCV_INCLUDE_DIRS} ${DLIB_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 	add_library(${PROJECT_NAME} SHARED ${SRCS})
@@ -43,6 +57,17 @@ if(BUILD_Demo)
 	target_link_libraries(demo ${PROJECT_NAME} ${OpenCV_LIBS} ${DLIB_LIBRARIES})
 	add_executable(demoSift demo/demoSift.cpp)
 	target_link_libraries(demoSift ${PROJECT_NAME} ${OpenCV_LIBS} ${DLIB_LIBRARIES})
+	#build trainVoc
+	set(BUILD_FILES
+		demo/ORBExtractor.h
+		demo/ORBExtractor.cpp
+		demo/trainVoc.h 
+		demo/trainVoc.cpp 
+		demo/main.cpp)
+
+	add_executable(trainVoc ${BUILD_FILES})
+	target_link_libraries(trainVoc ${PROJECT_NAME} ${OpenCV_LIBS} ${DLIB_LIBRARIES})
+
 	file(COPY demo/images DESTINATION ${CMAKE_BINARY_DIR}/)
 endif(BUILD_Demo)
 

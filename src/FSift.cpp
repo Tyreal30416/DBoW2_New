@@ -64,7 +64,7 @@ std::string FSift::toString(const FSift::TDescriptor &a)
   stringstream ss;
   for(int i = 0; i < FSift::L; ++i)
   {
-    ss << a[i] << " ";
+    ss <<a[i] << " ";
   }
   return ss.str();
 }

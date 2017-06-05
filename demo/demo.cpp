@@ -19,9 +19,9 @@
 // OpenCV
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
-#if CV24
+
 #include <opencv2/nonfree/features2d.hpp>
-#endif
+
 
 
 using namespace DBoW2;
@@ -53,23 +53,7 @@ void wait()
   getchar();
 }
 
-// ----------------------------------------------------------------------------
 
-int main()
-{
-  vector<vector<vector<float> > > features;
-  loadFeatures(features);
-
-  testVocCreation(features);
-
-  wait();
-
-  testDatabase(features);
-
-  return 0;
-}
-
-// ----------------------------------------------------------------------------
 
 void loadFeatures(vector<vector<vector<float> > > &features)
 {
@@ -205,5 +189,21 @@ void testDatabase(const vector<vector<vector<float> > > &features)
 }
 
 // ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
+int main()
+{
+  vector<vector<vector<float> > > features;
+  loadFeatures(features);
+
+  testVocCreation(features);
+
+  wait();
+
+  testDatabase(features);
+
+  return 0;
+}
+
+// ----------------------------------------------------------------------------
 

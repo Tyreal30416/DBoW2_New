@@ -24,10 +24,9 @@
 // OpenCV
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
-#if CV24
 #include <opencv2/nonfree/features2d.hpp>
 #include <opencv2/core/core.hpp>
-#endif
+
 
 // Execution Time
 #include <sys/time.h>
@@ -191,156 +190,6 @@ const char* keys =
 
 // ----------------------------------------------------------------------------
 
-int main(int argc, const char **argv)
-{
-    cv::CommandLineParser parser(argc, argv, keys);
-    if( parser.get<bool>( "h" ) || parser.get<bool>( "help" ) )
-    {
-        parser.printParams();
-        return EXIT_SUCCESS;
-    }
-
-    parser.printParams();
-    string sDatasetImagesDirectory = parser.get<string>("d");
-    string sQueryImagesDirectory   = parser.get<string>("q");
-    string sOutDirectory = parser.get<string>("o");
-    string vocName = parser.get<string>("vocName");
-    string dbName = parser.get<string>("dbName");
-    string listName = parser.get<string>("l");
-
-    int k = parser.get<int>("k");
-    int L = parser.get<int>("L");
-    int diLvl = parser.get<int>("i");
-    const int numImagesQuery = parser.get<int>("n");
-
-    bool root = parser.get<bool>("r");
-    bool matchingTest = parser.get<bool>("t");
-    bool waitAfterVocCreation = parser.get<bool>("w");
-    bool justDesc = false;
-
-    vector<string> datasetImagesNames;
-    vector<string> queryImagesNames;
-
-    vector<double> timers;
-
-    struct timeval tglobalStart, t1, t2, tglobalEnd;
-
-    cout << endl;
-    cout << "Starting the global timer..." << endl;
-    cout << endl;
-
-    gettimeofday(&tglobalStart, NULL);
-    gettimeofday(&t1, NULL);
-
-    storeImages(sDatasetImagesDirectory.c_str(), datasetImagesNames, false);
-    if (datasetImagesNames.size() == 0)
-    {
-        cout << "There is no image in the dataset directory " << sDatasetImagesDirectory
-                << "... The program is looking for .desc file in the output directory "
-                << sOutDirectory << endl;
-
-        justDesc = true;
-        storeImages(sOutDirectory.c_str(), datasetImagesNames, true);
-        if (datasetImagesNames.size() == 0)
-        {
-            cout << "There is no image in the dataset directory " << sDatasetImagesDirectory
-                << " and no .desc file in the output directory " << sOutDirectory
-                << "... The program cannot work." << endl;
-            return EXIT_FAILURE;
-        }
-
-    }
-
-    gettimeofday(&t2, NULL);
-    double texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
-    timers.push_back(texec);
-
-    gettimeofday(&t1, NULL);
-
-    storeImages(sQueryImagesDirectory.c_str()  , queryImagesNames, false);
-
-    gettimeofday(&t2, NULL);
-    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
-    timers.push_back(texec);
-
-    NIMAGES_DATASET = datasetImagesNames.size();
-    NIMAGES_QUERY   = queryImagesNames.size();
-
-    cout << "Dataset images: " << endl;
-    for (unsigned int i = 0; i < datasetImagesNames.size(); i++)
-    {
-        cout << "image " << i << " = " << datasetImagesNames[i] << endl;
-    }
-
-    cout << endl;
-
-    cout << "Query images: " << endl;
-    for (unsigned int i = 0; i < queryImagesNames.size(); i++)
-    {
-        cout << "image " << i << " = " << queryImagesNames[i] << endl;
-    }
-
-    cout << endl;
-    cout << "Extracting SIFT features..." << endl;
-    vector<vector<vector<float> > > datasetFeatures;
-    vector<vector<vector<float> > > queryFeatures;
-
-    string featQueryDir = sOutDirectory + "/featQuery";
-    string featDatasetDir = sOutDirectory + "/featDataset";
-    createDir(sOutDirectory);
-    createDir(featQueryDir);
-    createDir(featDatasetDir);
-    writeListFile(sOutDirectory + "/" + listName, datasetImagesNames);
-
-    gettimeofday(&t1, NULL);
-
-    bool isOK = loadFeatures(datasetFeatures, sDatasetImagesDirectory, sOutDirectory+"/featDataset", datasetImagesNames, root, justDesc);
-
-    gettimeofday(&t2, NULL);
-    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
-    timers.push_back(texec);
-    gettimeofday(&t1, NULL);
-
-    loadFeatures(queryFeatures  , sQueryImagesDirectory  , sOutDirectory+"/featQuery", queryImagesNames, root, false);
-
-    gettimeofday(&t2, NULL);
-    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
-    timers.push_back(texec);
-    gettimeofday(&t1, NULL);
-
-    testVocCreation(datasetFeatures, sOutDirectory, vocName, k, L, isOK, matchingTest);
-
-    gettimeofday(&t2, NULL);
-    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
-    timers.push_back(texec);
-
-    if (waitAfterVocCreation) wait();
-
-    gettimeofday(&t1, NULL);
-
-    testDatabase(datasetFeatures, queryFeatures, datasetImagesNames,
-            queryImagesNames, sOutDirectory, vocName, dbName, numImagesQuery, diLvl);
-
-    gettimeofday(&t2, NULL);
-    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
-    timers.push_back(texec);
-
-    gettimeofday(&tglobalEnd, NULL);
-    texec = (double) (1000.0*(tglobalEnd.tv_sec - tglobalStart.tv_sec) + (tglobalEnd.tv_usec - tglobalStart.tv_usec)/1000.0);
-
-    cout << endl;
-    cout << "Dataset images storage took " << timers[0] << " ms" << endl;
-    cout << "Query images storage took " << timers[1] << " ms" << endl;
-    cout << "Dataset features loading took " << timers[2] << " ms" << endl;
-    cout << "Query features loading took " << timers[3] << " ms" << endl;
-    cout << "Vocabulary testing took " << timers[4] << " ms" << endl;
-    cout << "Database testing took " << timers[5] << " ms" << endl;
-    cout << endl;
-    cout << "Global algorithm took " << texec << " ms" << endl;
-
-    return 0;
-}
-
 // ----------------------------------------------------------------------------
 
 void storeImages(const char* imagesDirectory, vector<string>& imagesNames, bool desc)
@@ -398,7 +247,7 @@ bool loadFeatures(vector<vector<vector<float> > > &features,
     features.clear();
     features.reserve(imagesNames.size());
 
-    cv::SIFT sift(15000, 3, 0.04, 10, 1.6);
+    cv::SIFT sift(500, 3, 0.04, 10, 1.6);
 
     bool loadFile = false;
 
@@ -423,7 +272,12 @@ bool loadFeatures(vector<vector<vector<float> > > &features,
             vector<cv::KeyPoint> keypoints;
             cv::Mat matDescriptors;
             sift(image, mask, keypoints, matDescriptors);
-
+            
+            /*
+            cout<<"original sift:"<<endl;
+            cout<<matDescriptors<<endl;
+            cout<<"**************************************"<<endl;
+            */
             descriptors.assign((float*)matDescriptors.datastart,
                     (float*)matDescriptors.dataend);
 
@@ -444,6 +298,12 @@ bool loadFeatures(vector<vector<vector<float> > > &features,
                     }
                 }
             }
+            /*
+            cout<<"root: "<<root<<endl;
+            for(int d=0;d<descriptors.size();++d)
+            	cout<<descriptors[d]<<" ";
+            cout<<endl;
+            */
             if (!descFileExists)
                 writeDescToBinFile(sOutDirectory+"/"+descFileName, descriptors);
             if (!featFileExists)
@@ -591,6 +451,7 @@ void testVocCreation(const vector<vector<vector<float> > > &features,
 
     // save the vocabulary to disk
     cout << endl << "Saving vocabulary..." << endl;
+    cout<<sOutDirectory + "/" + vocName<<endl;
     voc.save(sOutDirectory + "/" + vocName);
     cout << endl;
 
@@ -689,6 +550,15 @@ void testDatabase(const vector<vector<vector<float> > > &datasetFeatures,
     QueryResults ret;
     for(int i = 0; i < NIMAGES_QUERY; i++)
     {
+        /*
+        //test output query features
+        for(int q=0;q<queryFeatures[i].size();++q)
+        {
+        	for(int c=0;c<queryFeatures[i][q].size();++c)
+        		cout<<queryFeatures[i][q][c]<<" ";
+        }
+        cout<<endl<<"========================================================="<<endl;
+        */
         gettimeofday(&t1, NULL);
         db.query(queryFeatures[i], ret, nbBestMatchesToKeep);
         gettimeofday(&t2,NULL);
@@ -771,5 +641,158 @@ bool fileAlreadyExists(string& fileName, string& sDirectory)
     }
     closedir(repertoire);
     return false;
+}
+
+
+
+int main(int argc, const char **argv)
+{
+    cv::CommandLineParser parser(argc, argv, keys);
+    if( parser.get<bool>( "h" ) || parser.get<bool>( "help" ) )
+    {
+        parser.printParams();
+        return EXIT_SUCCESS;
+    }
+
+    parser.printParams();
+    string sDatasetImagesDirectory = parser.get<string>("d");
+    string sQueryImagesDirectory   = parser.get<string>("q");
+    string sOutDirectory = parser.get<string>("o");
+    string vocName = parser.get<string>("vocName");
+    string dbName = parser.get<string>("dbName");
+    string listName = parser.get<string>("l");
+
+    int k = parser.get<int>("k");
+    int L = parser.get<int>("L");
+    int diLvl = parser.get<int>("i");
+    const int numImagesQuery = parser.get<int>("n");
+
+    bool root = /*parser.get<bool>("r")*/0;
+    bool matchingTest = parser.get<bool>("t");
+    bool waitAfterVocCreation = parser.get<bool>("w");
+    bool justDesc = false;
+
+    vector<string> datasetImagesNames;
+    vector<string> queryImagesNames;
+
+    vector<double> timers;
+
+    struct timeval tglobalStart, t1, t2, tglobalEnd;
+
+    cout << endl;
+    cout << "Starting the global timer..." << endl;
+    cout << endl;
+
+    gettimeofday(&tglobalStart, NULL);
+    gettimeofday(&t1, NULL);
+
+    storeImages(sDatasetImagesDirectory.c_str(), datasetImagesNames, false);
+    if (datasetImagesNames.size() == 0)
+    {
+        cout << "There is no image in the dataset directory " << sDatasetImagesDirectory
+                << "... The program is looking for .desc file in the output directory "
+                << sOutDirectory << endl;
+
+        justDesc = true;
+        storeImages(sOutDirectory.c_str(), datasetImagesNames, true);
+        if (datasetImagesNames.size() == 0)
+        {
+            cout << "There is no image in the dataset directory " << sDatasetImagesDirectory
+                << " and no .desc file in the output directory " << sOutDirectory
+                << "... The program cannot work." << endl;
+            return EXIT_FAILURE;
+        }
+
+    }
+
+    gettimeofday(&t2, NULL);
+    double texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
+    timers.push_back(texec);
+
+    gettimeofday(&t1, NULL);
+
+    storeImages(sQueryImagesDirectory.c_str()  , queryImagesNames, false);
+
+    gettimeofday(&t2, NULL);
+    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
+    timers.push_back(texec);
+
+    NIMAGES_DATASET = datasetImagesNames.size();
+    NIMAGES_QUERY   = queryImagesNames.size();
+
+    cout << "Dataset images: " << endl;
+    for (unsigned int i = 0; i < datasetImagesNames.size(); i++)
+    {
+        cout << "image " << i << " = " << datasetImagesNames[i] << endl;
+    }
+
+    cout << endl;
+
+    cout << "Query images: " << endl;
+    for (unsigned int i = 0; i < queryImagesNames.size(); i++)
+    {
+        cout << "image " << i << " = " << queryImagesNames[i] << endl;
+    }
+
+    cout << endl;
+    cout << "Extracting SIFT features..." << endl;
+    vector<vector<vector<float> > > datasetFeatures;
+    vector<vector<vector<float> > > queryFeatures;
+
+    string featQueryDir = sOutDirectory + "/featQuery";
+    string featDatasetDir = sOutDirectory + "/featDataset";
+    createDir(sOutDirectory);
+    createDir(featQueryDir);
+    createDir(featDatasetDir);
+    writeListFile(sOutDirectory + "/" + listName, datasetImagesNames);
+
+    gettimeofday(&t1, NULL);
+
+    bool isOK = loadFeatures(datasetFeatures, sDatasetImagesDirectory, sOutDirectory+"/featDataset", datasetImagesNames, root, justDesc);
+
+    gettimeofday(&t2, NULL);
+    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
+    timers.push_back(texec);
+    gettimeofday(&t1, NULL);
+
+    loadFeatures(queryFeatures  , sQueryImagesDirectory  , sOutDirectory+"/featQuery", queryImagesNames, root, false);
+
+    gettimeofday(&t2, NULL);
+    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
+    timers.push_back(texec);
+    gettimeofday(&t1, NULL);
+   
+    datasetFeatures.resize(2000);
+    testVocCreation(datasetFeatures, sOutDirectory, vocName, k, L, isOK, matchingTest);
+
+    gettimeofday(&t2, NULL);
+    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
+    timers.push_back(texec);
+
+    if (waitAfterVocCreation) wait();
+
+    gettimeofday(&t1, NULL);
+
+    testDatabase(datasetFeatures, queryFeatures, datasetImagesNames,
+            queryImagesNames, sOutDirectory, vocName, dbName, numImagesQuery, diLvl);
+
+    gettimeofday(&t2, NULL);
+    texec = (double) (1000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000.0);
+    timers.push_back(texec);
+
+    gettimeofday(&tglobalEnd, NULL);
+    texec = (double) (1000.0*(tglobalEnd.tv_sec - tglobalStart.tv_sec) + (tglobalEnd.tv_usec - tglobalStart.tv_usec)/1000.0);
+
+    cout << endl;
+    cout << "Dataset images storage took " << timers[0] << " ms" << endl;
+    cout << "Query images storage took " << timers[1] << " ms" << endl;
+    cout << "Dataset features loading took " << timers[2] << " ms" << endl;
+    cout << "Query features loading took " << timers[3] << " ms" << endl;
+    cout << "Vocabulary testing took " << timers[4] << " ms" << endl;
+    cout << "Database testing took " << timers[5] << " ms" << endl;
+    cout << endl;
+    cout << "Global algorithm took " << texec << " ms" << endl;
+
+    return 0;
 }
 
