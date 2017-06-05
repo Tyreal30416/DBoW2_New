@@ -57,8 +57,7 @@ void TrainVOC::trainVoc(const string& imageDirectory,const string& outDirectory,
 		featDir, imagesNames, justDesc);
 
 	//create voc
-	const WeightingType weight = TF_IDF;
-    const ScoringType score = L1_NORM;
+	const WeightingType weight = TF_IDF;    const ScoringType score = L1_NORM;
 
 #ifdef USE_BINARY_FEAT
     ORBVocabulary voc(k,L,weight,score);
@@ -252,6 +251,12 @@ bool TrainVOC::loadFeatures(
             cv::Mat matDescriptors;
 #ifdef USE_BINARY_FEAT
             extractor(image,mask,keypoints,matDescriptors);
+            if(keypoints.empty())
+            {
+            	cerr<<"Warning: image can not extract features!!"<<endl;
+            	continue;
+            }
+
             descriptors.assign((unsigned char*)matDescriptors.datastart,
                     (unsigned char*)matDescriptors.dataend);
 #else
@@ -265,7 +270,7 @@ bool TrainVOC::loadFeatures(
 			cv::drawKeypoints(image, keypoints, outImage);
 			cv::waitKey(5);
 			cv::imshow("kpts", outImage);
-			 
+
             if (!descFileExists)
                 writeDescToBinFile(sOutDirectory+"/"+descFileName, descriptors);
             if (!featFileExists)
@@ -281,11 +286,47 @@ bool TrainVOC::loadFeatures(
         cout<<"Descriptor size is "<<descriptors.size()/32<<endl;
         cout<<endl;
 
+        /// some images maybe have no binary features
+        bool validDesc = true;
+        int invalidCont=0;
+        for(int i=0; i<descriptors.size();++i)
+        {
+        	if(descriptors[i] == '0')
+        		invalidCont++;
+        }   
+
+        if(invalidCont==descriptors.size())
+        	validDesc = false;
+
+        if(descriptors.empty() || !validDesc)
+        {
+        	cerr<<"Warning: invalid descriptor detected..."<<endl;
+        	continue;
+        }
+
         features.push_back(vector<cv::Mat>());
         changeStructure(descriptors, features.back(), 32);
 #else
         cout<<"Descriptor size is "<<descriptors.size()/128<<endl;
         cout<<endl;
+
+        /// some images maybe have no binary features
+        bool validDesc = true;
+        int invalidCont=0;
+        for(int i=0; i<descriptors.size();++i)
+        {
+        	if(descriptors[i] == 0.)
+        		invalidCont++;
+        }   
+
+        if(invalidCont==descriptors.size())
+        	validDesc = false;
+
+        if(descriptors.empty() || !validDesc)
+        {
+        	cerr<<"Warning: invalid descriptor detected..."<<endl;
+        	continue;
+        }
 
         //push back
         features.push_back(vector<vector<float> >());

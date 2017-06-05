@@ -4,8 +4,19 @@ project(DBoW2)
 option(WITH_OPENMP   "Enable OpenMP multithreading"     ON)
 option(BUILD_DBoW2   "Build DBoW2"            ON)
 option(BUILD_Demo    "Build demo application" ON)
+option(BUILD_DEBUG "BUILD demo with debug mode" OFF)
+
+IF(BUILD_DEBUG)
+	SET(CMAKE_BUILD_TYPE "Debug") # Release, RelWithDebInfo
+	SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+	SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+ELSE()
+	SET(CMAKE_BUILD_TYPE "Release")
+ENDIF()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/.cmake")
 include(UpdateCacheVariable)
