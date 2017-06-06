@@ -214,7 +214,7 @@ bool TrainVOC::loadFeatures(
 {
 	bool goodDescType = true;
     features.clear();
-    features.reserve(imagesNames.size());
+    //features.reserve(imagesNames.size());
 
 #ifdef USE_BINARY_FEAT
     MarkerDetector::ORBextractor extractor(1000,1.2f,8, 15, 10);
@@ -404,7 +404,8 @@ void TrainVOC::changeStructure(
 
 		memcpy(desc.data, tmp.data(), tmp.size()*sizeof(uchar));
 
-		out.push_back(desc);
+		out[i/L]=desc;
+
 	}
 
 #else

@@ -66,8 +66,7 @@ endif(BUILD_DBoW2)
 if(BUILD_Demo)
 	add_executable(demo demo/demo.cpp)
 	target_link_libraries(demo ${PROJECT_NAME} ${OpenCV_LIBS} ${DLIB_LIBRARIES})
-	add_executable(demoSift demo/demoSift.cpp)
-	target_link_libraries(demoSift ${PROJECT_NAME} ${OpenCV_LIBS} ${DLIB_LIBRARIES})
+
 	#build trainVoc
 	set(BUILD_FILES
 		demo/ORBExtractor.h
